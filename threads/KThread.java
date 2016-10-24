@@ -473,19 +473,21 @@ public static void selfTest() {
     // dos.fork();
     // tres = new KThread(new PingTest(3)).setName("forked thread3");
     // tres.fork(); 
-    Communicator com = new Communicator();
-    cero = new KThread(new prove_listen(com)).setName("YO");
-    cero.fork();
-    uno = new KThread(new prove_speack(com)).setName("TU");
-    uno.fork();
-    dos = new KThread(new prove_listen(com)).setName("YO2");
-    dos.fork();
-    tres = new KThread(new prove_speack(com)).setName("TU2");
-    tres.fork();
-    cero.join();
-    uno.join();
-    dos.join();
-    tres.join();
+    // Communicator com = new Communicator();
+    // cero = new KThread(new prove_listen(com)).setName("YO");
+    // cero.fork();
+    // uno = new KThread(new prove_speack(com)).setName("TU");
+    // uno.fork();
+    // dos = new KThread(new prove_listen(com)).setName("YO2");
+    // dos.fork();
+    // tres = new KThread(new prove_speack(com)).setName("TU2");
+    // tres.fork();
+    // cero.join();
+    // uno.join();
+    // dos.join();
+    // tres.join();
+    Boat prueba = new Boat();
+    prueba.selfTest();
 
 
 }
