@@ -462,6 +462,40 @@ private static class prove_speack implements Runnable{
 
 }
 
+
+public static void selfTestRun(KThread t1, int t1p, KThread t2, int t2p, KThread t3, int t3p) { 
+
+
+    boolean int_state; 
+
+
+    int_state = Machine.interrupt().disable(); 
+
+    ThreadedKernel.scheduler.setPriority(t1, t1p); 
+
+    ThreadedKernel.scheduler.setPriority(t2, t2p); 
+
+    ThreadedKernel.scheduler.setPriority(t3, t3p); 
+
+    Machine.interrupt().restore(int_state); 
+
+
+    t1.setName("a").fork(); 
+
+    t2.setName("b").fork(); 
+
+    t3.setName("c").fork(); 
+
+    t1.join(); 
+
+    t2.join(); 
+
+    t3.join(); 
+
+
+} 
+
+
 /** * Tests whether this module is working. */
 public static void selfTest() {
     // Lib.debug(dbgThread, "Enter KThread.selfTest"); 
@@ -486,8 +520,130 @@ public static void selfTest() {
     // uno.join();
     // dos.join();
     // tres.join();
-    Boat prueba = new Boat();
-    prueba.selfTest();
+    
+    /* Prueba del boat */
+    //Boat prueba = new Boat();
+    //prueba.selfTest();
+
+    /* 
+
+    * Case 3: Tests priority donation 
+
+    * 
+
+    * This runs t1 with priority 7, t2 with priority 6 and t3 with 
+
+    * priority 4. t1 will wait on a lock, and while t2 would normally 
+
+    * then steal all available CPU, priority donation will ensure that 
+
+    * t3 is given control in order to help unlock t1. 
+
+    * 
+
+    */ 
+
+
+    System.out.println("Case 3:"); 
+
+
+    Lock lock = new Lock(); 
+
+    Condition2 condition = new Condition2(lock); 
+
+
+    KThread t1 = new KThread(new Runnable() 
+
+    { 
+
+    public void run() 
+
+    { 
+
+    lock.acquire(); 
+
+    System.out.println(KThread.currentThread().getName() + " active"); 
+
+    lock.release(); 
+
+    } 
+
+    }); 
+
+
+    KThread  t2 = new KThread(new Runnable() 
+
+    { 
+
+    public void run() 
+
+    { 
+
+    System.out.println(KThread.currentThread().getName() + " started working"); 
+
+    for (int i = 0; i < 3; ++i) 
+
+    { 
+
+    System.out.println(KThread.currentThread().getName() + " working " + i); 
+
+    KThread.yield(); 
+
+    } 
+
+    System.out.println(KThread.currentThread().getName() + " finished working"); 
+
+    } 
+
+
+    }); 
+
+
+    KThread  t3 = new KThread(new Runnable() 
+
+    { 
+
+    public void run() 
+
+    { 
+
+    lock.acquire(); 
+
+
+    boolean int_state = Machine.interrupt().disable(); 
+
+    ThreadedKernel.scheduler.setPriority(2); 
+
+    Machine.interrupt().restore(int_state); 
+
+
+    KThread.yield(); 
+
+
+    // t1.acquire() will now have to realise that t3 owns the lock it wants to obtain 
+
+    // so program execution will continue here. 
+
+
+    System.out.println(KThread.currentThread().getName() + " active ('a' wants its lock back so we are here)"); 
+
+    lock.release(); 
+
+    KThread.yield(); 
+
+    lock.acquire(); 
+
+    System.out.println(KThread.currentThread().getName() + " active-again (should be after 'a' and 'b' done)"); 
+
+    lock.release(); 
+
+
+    } 
+
+    }); 
+
+
+    selfTestRun(t1, 6, t2, 4, t3, 7); 
 
 
 }

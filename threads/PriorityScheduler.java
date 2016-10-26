@@ -110,6 +110,7 @@ public class PriorityScheduler extends Scheduler {
      */
     public static final int priorityMaximum = 7;    
 
+
     /**
      * Return the scheduling state of the specified thread.
      *
@@ -133,6 +134,11 @@ public class PriorityScheduler extends Scheduler {
 
 		public void waitForAccess(KThread thread) {
 		    Lib.assertTrue(Machine.interrupt().disabled());
+		    if(transferPriority){
+		    	if(haveLock!= null && haveLock.getPriority()< getThreadState(thread).getPriority()){
+		    		haveLock.setEffectivePriority(getThreadState(thread).getPriority());
+		    	}
+		    }
 		    getThreadState(thread).waitForAccess(this);
 		}
 
@@ -177,12 +183,13 @@ public class PriorityScheduler extends Scheduler {
 		    ThreadState realPriority = null;
 		    while(ite.hasNext()){
 		    	newPriority = (ThreadState)ite.next();
-		    	if(newPriority.getPriority() > maxim_p){
-		    		maxim_p = newPriority.getPriority();
+		    	if(newPriority.getEffectivePriority() > maxim_p){
+		    		maxim_p = newPriority.getEffectivePriority();
 		    		realPriority = newPriority;
 		    	}
 
 		    }
+		    realPriority.setEffectivePriority(0);
 		    return realPriority;
 		}
 		
@@ -198,7 +205,7 @@ public class PriorityScheduler extends Scheduler {
 		public boolean transferPriority;
 		public ArrayList<ThreadState> waitQueue = new ArrayList();
 
-		ThreadState haveLock = null;
+		ThreadState haveLock;
     }
 
     /**
@@ -236,6 +243,10 @@ public class PriorityScheduler extends Scheduler {
 		    return priority;
 		}
 
+		public void setEffectivePriority(int effectivePriotiry){
+			this.effectivePriotiry = effectivePriotiry;
+		}
+
 		/**
 		 * Return the effective priority of the associated thread.
 		 *
@@ -243,7 +254,12 @@ public class PriorityScheduler extends Scheduler {
 		 */
 		public int getEffectivePriority() {
 		    // implement me
-		    return priority;
+		    if (effectivePriotiry == 0){
+		    	return priority;	
+		    }
+
+		    return effectivePriotiry;
+		    
 		}
 
 		/**
@@ -290,12 +306,16 @@ public class PriorityScheduler extends Scheduler {
 		 */
 		public void acquire(PriorityQueue waitQueue) {
 		    // implement me
+		    waitQueue.haveLock = this;
+
 		}	
 
 		/** The thread with which this object is associated. */	   
 		protected KThread thread;
 		/** The priority of the associated thread. */
 		protected int priority = priorityDefault;
+
+		protected int effectivePriotiry = 0;
 
     }
 }

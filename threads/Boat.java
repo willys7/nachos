@@ -10,6 +10,7 @@ public class Boat
     static int asientos = 2;
     static Isla oahu;
     static Isla molokai;
+    static Communicator com;
     private static final char dbgTread = 'b';
     
 
@@ -127,7 +128,8 @@ public class Boat
 		    t.fork();
 		}
 			    
-        
+        com = new Communicator();
+        com.listen();
 
     }
 
@@ -239,11 +241,14 @@ public class Boat
     		}
     		else{
     			if(molokai.getPersonas() == 0){
-    				System.out.println("sii");
-    				molokai.getIsla().sleep();
+    				Lib.debug(dbgTread, "ya no hay gente en oahu");
+    				System.out.println("Termine");
+    				com.speak(2);
+    				// molokai.getIsla().sleep();
     			}
     			else{
     				if(!balsaLocation){
+    					Lib.debug(dbgTread,"ninio llego a oahu de nuevo");
     					location = true;
     					molokai.setNios(molokai.getNios()-1);
     					asientos = 1;
