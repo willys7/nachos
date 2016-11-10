@@ -3,6 +3,7 @@ package nachos.userprog;
 import nachos.machine.*;
 import nachos.threads.*;
 import nachos.userprog.*;
+import java.util.HashMap;
 
 import java.io.EOFException;
 
@@ -22,9 +23,14 @@ public class UserProcess {
     /**
      * Allocate a new process.
      */
+
+    protected HashMap<Integer, OpenFile> tablaArchivos = new HashMap(16,(float)1.1);
     public UserProcess() {
 	int numPhysPages = Machine.processor().getNumPhysPages();
 	pageTable = new TranslationEntry[numPhysPages];
+    for (int i=0;i<16 ;i++ ) {
+        tablaArchivos.put(i, null);
+    }
 	for (int i=0; i<numPhysPages; i++)
 	    pageTable[i] = new TranslationEntry(i,i, true,false,false,false);
     }
@@ -38,6 +44,38 @@ public class UserProcess {
      */
     public static UserProcess newUserProcess() {
 	return (UserProcess)Lib.constructObject(Machine.getProcessClassName());
+    }
+
+    public int findSpace(){
+
+        if (!tablaArchivos.containsValue(null)) {
+            return -1;
+        }else{
+            for (Integer llave : tablaArchivos.keySet()) {
+                if (tablaArchivos.get(llave) == null) {
+                    return llave;
+                }
+            }
+            return -1;
+        }
+    }
+
+    public int handleCreate(int p1){
+
+
+        String nombre = readVirtualMemoryString(p1, 256);
+        OpenFile of =  UserKernel.fileSystem.open(nombre, true);
+        if (of == null) {
+            return -1;
+        }else{
+            int sp = findSpace();
+            if (sp > -1) {
+                tablaArchivos.put(sp, of);
+                return sp;
+            }else {
+                return -1;
+            }
+        }
     }
 
     /**
@@ -392,7 +430,8 @@ public class UserProcess {
 	case syscallHalt:
 	    return handleHalt();
 
-
+    case syscallCreate:
+        return handleCreate(a0);
 	default:
 	    Lib.debug(dbgProcess, "Unknown syscall " + syscall);
 	    Lib.assertNotReached("Unknown system call!");
