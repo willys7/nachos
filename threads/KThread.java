@@ -284,13 +284,18 @@ public class KThread {
     	Lib.debug(dbgThread, "Joining to thread: " + toString());
 
     	Lib.assertTrue(this != currentThread);
+        jQueue = ThreadedKernel.scheduler.newThreadQueue(false);
+            
 
+        //Si el status del thread es ya finalizado solo retorna desde 
+        //donde fue llamada la funcion
         if (status == statusFinished){
             return;
         }
         else{
-            Machine.interrupt().disable(); //disable current Thread
-            //meter todos los current threads
+            Machine.interrupt().disable(); //disable current Thread, desactiva las interrupciones
+            //para que pueda suceder un context switch
+            //mete el currentThread a una queue de treads donde va a esperar
             this.jQueue.waitForAccess(currentThread);
             currentThread.sleep();
             Machine.interrupt().enable();
@@ -409,14 +414,15 @@ private static class PingTest implements Runnable {
 
     public void run() { 
 
+        
         for (int i=0; i<5; i++) { 
 
-            System.out.println("*** thread " + which + " looped " + i + " times, Tick:" + Machine.timer().getTime()); 
-            if ((which==1) && (i==0)) ThreadedKernel.alarm.waitUntil(1000);
-            if ((which==1) && (i==1)) dos.join();
-            if ((which==0) && (i==2)) dos.join();
-            if ((which==2) && (i==3)) tres.join();
-            if ((which==1) && (i==3)) dos.join();
+            //System.out.println("*** thread " + which + " looped " + i + " times, Tick:" + Machine.timer().getTime()); 
+            System.out.println("*** thread " + which + " printed " + i); 
+            // if ((which==0) && (i==0)) uno.join();
+            // if ((which==1) && (i==0)) dos.join();
+            
+            // if ((which==1) && (i==0)) ThreadedKernel.alarm.waitUntil(12);
             
             currentThread.yield();
         } 
@@ -434,11 +440,10 @@ private static class prove_listen implements Runnable{
     }
 
     public void run(){
-        for (int i=0; i<2; i++) { 
+        for (int i=0; i < 5; i++) {
             int rand = 2000 + (int) (Math.random()*4000);
-           this.com.listen();
-           System.out.println(currentThread.getName()+" dormir " + rand);
-        } 
+            this.com.listen();
+        }
     }
 
 }
@@ -450,14 +455,10 @@ private static class prove_speack implements Runnable{
     }
 
     public void run(){
-        for (int i=0; i<2; i++) { 
+        for (int i=0; i < 5; i++) {
             int rand = 2000 + (int) (Math.random()*4000);
-           this.com.speak(rand);
-           if(currentThread.getName().equals("TU") || currentThread.getName().equals("TU2")){
-            System.out.println(currentThread.getName() + "dormir" + rand);
-            ThreadedKernel.alarm.waitUntil(rand);
-           }
-        } 
+            this.com.speak(rand);
+        }
     }
 
 }
@@ -496,31 +497,56 @@ public static void selfTestRun(KThread t1, int t1p, KThread t2, int t2p, KThread
 } 
 
 
+        
 /** * Tests whether this module is working. */
-public static void selfTest() {
-    // Lib.debug(dbgThread, "Enter KThread.selfTest"); 
-    // cero = new KThread(new PingTest(0)).setName("forked thread0");
-    // cero.fork();
-    // uno = new KThread(new PingTest(1)).setName("forked thread1");
-    // uno.fork();
-    // dos = new KThread(new PingTest(2)).setName("forked thread2");
-    // dos.fork();
+ public static void selfTest() {
+    Lib.debug(dbgThread, "Enter KThread.selfTest"); 
+    cero = new KThread(new PingTest(0)).setName("thread1");
+    uno = new KThread(new PingTest(1)).setName("thread2");
+    dos = new KThread(new PingTest(2)).setName("thread3");
+    
+    boolean int_state = Machine.interrupt().disable();
+    ThreadedKernel.scheduler.setPriority(cero, 4);
+    ThreadedKernel.scheduler.setPriority(uno, 6);
+    ThreadedKernel.scheduler.setPriority(dos, 3);
+    Machine.interrupt().restore(int_state);
+
+
+//     ThreadedKernel.scheduler.setPriority(uno,1);
+//     ThreadedKernel.scheduler.setPriority(cero,3);
+//     ThreadedKernel.scheduler.setPriority(dos,6);
+        
+    cero.fork();
+    uno.fork();
+    dos.fork();
     // tres = new KThread(new PingTest(3)).setName("forked thread3");
     // tres.fork(); 
     // Communicator com = new Communicator();
-    // cero = new KThread(new prove_listen(com)).setName("YO");
+    // cero = new KThread(new prove_speack(com)).setName("Thread1");
     // cero.fork();
-    // uno = new KThread(new prove_speack(com)).setName("TU");
+    // uno = new KThread(new prove_listen(com)).setName("Thread2");
     // uno.fork();
-    // dos = new KThread(new prove_listen(com)).setName("YO2");
+    // dos = new KThread(new prove_speack(com)).setName("Thread3");
     // dos.fork();
-    // tres = new KThread(new prove_speack(com)).setName("TU2");
+    // tres = new KThread(new prove_listen(com)).setName("Thread4");
     // tres.fork();
-    // cero.join();
-    // uno.join();
-    // dos.join();
-    // tres.join();
+    // cuatro = new KThread(new prove_speack(com)).setName("Thread5");
+    // cuatro.fork();
+    // cinco = new KThread(new prove_listen(com)).setName("Thread6");
+    // cinco.fork();
+    // seis = new KThread(new prove_listen(com)).setName("Thread7");
+    // seis.fork();
+    // siete = new KThread(new prove_speack(com)).setName("Thread8");
+    // siete.fork();
     
+    cero.join();
+    uno.join();
+    dos.join();
+    // tres.join();
+    // cuatro.join();
+    // cinco.join();
+    // seis.join();
+    // siete.join();
     /* Prueba del boat */
     //Boat prueba = new Boat();
     //prueba.selfTest();
@@ -544,106 +570,106 @@ public static void selfTest() {
     */ 
 
 
-    System.out.println("Case 3:"); 
+    // System.out.println("Case 3:"); 
 
 
-    Lock lock = new Lock(); 
+    // Lock lock = new Lock(); 
 
-    Condition2 condition = new Condition2(lock); 
-
-
-    KThread t1 = new KThread(new Runnable() 
-
-    { 
-
-    public void run() 
-
-    { 
-
-    lock.acquire(); 
-
-    System.out.println(KThread.currentThread().getName() + " active"); 
-
-    lock.release(); 
-
-    } 
-
-    }); 
+    // Condition2 condition = new Condition2(lock); 
 
 
-    KThread  t2 = new KThread(new Runnable() 
+    // KThread t1 = new KThread(new Runnable() 
 
-    { 
+    // { 
 
-    public void run() 
+    // public void run() 
 
-    { 
+    // { 
 
-    System.out.println(KThread.currentThread().getName() + " started working"); 
+    // lock.acquire(); 
 
-    for (int i = 0; i < 3; ++i) 
+    // System.out.println(KThread.currentThread().getName() + " active"); 
 
-    { 
+    // lock.release(); 
 
-    System.out.println(KThread.currentThread().getName() + " working " + i); 
+    // } 
 
-    KThread.yield(); 
-
-    } 
-
-    System.out.println(KThread.currentThread().getName() + " finished working"); 
-
-    } 
+    // }); 
 
 
-    }); 
+    // KThread  t2 = new KThread(new Runnable() 
+
+    // { 
+
+    // public void run() 
+
+    // { 
+
+    // System.out.println(KThread.currentThread().getName() + " started working"); 
+
+    // for (int i = 0; i < 3; ++i) 
+
+    // { 
+
+    // System.out.println(KThread.currentThread().getName() + " working " + i); 
+
+    // KThread.yield(); 
+
+    // } 
+
+    // System.out.println(KThread.currentThread().getName() + " finished working"); 
+
+    // } 
 
 
-    KThread  t3 = new KThread(new Runnable() 
-
-    { 
-
-    public void run() 
-
-    { 
-
-    lock.acquire(); 
+    // }); 
 
 
-    boolean int_state = Machine.interrupt().disable(); 
+    // KThread  t3 = new KThread(new Runnable() 
 
-    ThreadedKernel.scheduler.setPriority(2); 
+    // { 
 
-    Machine.interrupt().restore(int_state); 
+    // public void run() 
 
+    // { 
 
-    KThread.yield(); 
-
-
-    // t1.acquire() will now have to realise that t3 owns the lock it wants to obtain 
-
-    // so program execution will continue here. 
+    // lock.acquire(); 
 
 
-    System.out.println(KThread.currentThread().getName() + " active ('a' wants its lock back so we are here)"); 
+    // boolean int_state = Machine.interrupt().disable(); 
 
-    lock.release(); 
+    // ThreadedKernel.scheduler.setPriority(2); 
 
-    KThread.yield(); 
-
-    lock.acquire(); 
-
-    System.out.println(KThread.currentThread().getName() + " active-again (should be after 'a' and 'b' done)"); 
-
-    lock.release(); 
+    // Machine.interrupt().restore(int_state); 
 
 
-    } 
-
-    }); 
+    // KThread.yield(); 
 
 
-    selfTestRun(t1, 6, t2, 4, t3, 7); 
+    // // t1.acquire() will now have to realise that t3 owns the lock it wants to obtain 
+
+    // // so program execution will continue here. 
+
+
+    // System.out.println(KThread.currentThread().getName() + " active ('a' wants its lock back so we are here)"); 
+
+    // lock.release(); 
+
+    // KThread.yield(); 
+
+    // lock.acquire(); 
+
+    // System.out.println(KThread.currentThread().getName() + " active-again (should be after 'a' and 'b' done)"); 
+
+    // lock.release(); 
+
+
+    // } 
+
+    // }); 
+
+
+    // selfTestRun(t1, 6, t2, 4, t3, 7); 
 
 
 }
@@ -651,7 +677,12 @@ public static void selfTest() {
     public static KThread tres = null;
     public static KThread uno = null;
     public static KThread dos = null;
-    public static KThread cero = null; 
+    public static KThread cero = null;
+    public static KThread cuatro = null;
+    public static KThread cinco = null;
+    public static KThread seis = null;
+    public static KThread siete = null;
+         
 
     private static final char dbgThread = 't';
 
@@ -688,7 +719,7 @@ public static void selfTest() {
     private static int numCreated = 0;
 
     private static ThreadQueue readyQueue = null;
-    private static ThreadQueue jQueue = null;
+    private ThreadQueue jQueue = null;
     private static KThread currentThread = null;
     private static KThread toBeDestroyed = null;
     private static KThread idleThread = null;

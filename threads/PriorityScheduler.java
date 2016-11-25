@@ -117,6 +117,8 @@ public class PriorityScheduler extends Scheduler {
      * @param	thread	the thread whose scheduling state to return.
      * @return	the scheduling state of the specified thread.
      */
+
+
     protected ThreadState getThreadState(KThread thread) {
 		if (thread.schedulingState == null)
 		    thread.schedulingState = new ThreadState(thread);
@@ -134,6 +136,7 @@ public class PriorityScheduler extends Scheduler {
 
 		public void waitForAccess(KThread thread) {
 		    Lib.assertTrue(Machine.interrupt().disabled());
+		    // PRIORITY INVERSION -- EL THREAD QUE TIENE EL LOCK SIEMPRE VA A TENER LA MAYOR PRIORIDAD
 		    if(transferPriority){
 		    	if(haveLock!= null && haveLock.getPriority()< getThreadState(thread).getPriority()){
 		    		haveLock.setEffectivePriority(getThreadState(thread).getPriority());

@@ -4,6 +4,7 @@ import nachos.machine.*;
 import nachos.threads.*;
 import nachos.userprog.*;
 
+import java.util.LinkedList; 
 /**
  * A kernel that can support multiple user processes.
  */
@@ -20,13 +21,19 @@ public class UserKernel extends ThreadedKernel {
      * processor's exception handler.
      */
     public void initialize(String[] args) {
-	super.initialize(args);
+    	super.initialize(args);
 
-	console = new SynchConsole(Machine.console());
-	
-	Machine.processor().setExceptionHandler(new Runnable() {
+    	console = new SynchConsole(Machine.console());
+    	
+    	Machine.processor().setExceptionHandler(new Runnable() {
 		public void run() { exceptionHandler(); }
 	    });
+        
+        //INICIALIZACION DE LA PAGETABLE
+        //SE LLENA CON TODOS TODOS LOS INDICES, YA QUE LA MEMORIA EMPIEZA VACIA
+        int numPhysPages = Machine.processor().getNumPhysPages(); 
+        for (int i = 0; i < numPhysPages; i++) 
+            pageTable.add(i); 
     }
 
     /**
@@ -106,6 +113,46 @@ public class UserKernel extends ThreadedKernel {
     public void terminate() {
 	super.terminate();
     }
+
+    /*
+        DEVUELVE UN NUMERO DE PAGINA QUE ESTE VACIA
+        DEVUELVE -1 SI LA MEMORIA ESTA LLENA
+    */
+    public static int getFreePage() {
+        //INICIALIZACION DE VAR
+        int pageNumber = -1;
+        
+        Machine.interrupt().disable(); 
+        
+        /*
+            Si la tabla de paginas esta vacia -> la memoria esta llena
+        */
+        if (pageTable.isEmpty() == false)
+            // Si la tabla aun no esta vacia, se devuelve el numero de la primera pagina vacia
+            pageNumber = pageTable.removeFirst(); 
+        
+        Machine.interrupt().enable(); 
+
+        return pageNumber; 
+    }
+
+    /*
+        Agrega una pagina a la tabla de paginas
+    */
+    public static void addFreePage(int pageNumber){
+        // verifica que la pageNumber se encuentre entre los limites permitido 
+        Lib.assertTrue(pageNumber >= 0 && pageNumber < Machine.processor().getNumPhysPages());
+        
+        Machine.interrupt().disable(); 
+
+        //Se agrega la pagina a la tabla 
+        pageTable.addFirst(pageNumber);
+
+        Machine.interrupt().enable(); 
+    }
+
+    /* lista global de paginas fisicas */
+    private static LinkedList<Integer> pageTable = new LinkedList<Integer>(); 
 
     /** Globally accessible reference to the synchronized console. */
     public static SynchConsole console;

@@ -39,17 +39,19 @@ public class Communicator {
 
 
     public void speak(int word) {
+        //reservo/aparto el lock
         lock.acquire();
+        //mientras no sea un specker el thread que estoy atendiendo
         while(!is_speack){
             OkToSpeack.sleep();
 
         }
 
-        lock.release();
+        // lock.release();
         message = word;
         System.out.println("Thread: " + KThread.currentThread() + "wrote: " + message);
         
-        lock.acquire();
+        // lock.acquire();
         is_speack = false;
         
         if(is_speack){
@@ -73,10 +75,10 @@ public class Communicator {
         while(is_speack){
             OkToListen.sleep();
         }
-        lock.release();
-        System.out.println("Tread: "  + KThread.currentThread() + "read: " + message);
+        // lock.release();
+         System.out.println("Tread: "  + KThread.currentThread() + "read: " + message);
         
-        lock.acquire();
+        // lock.acquire();
         is_speack = true;
         if(is_speack){
             OkToSpeack.wake();

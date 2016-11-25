@@ -59,11 +59,19 @@ public class Alarm {
      */
     public void waitUntil(long x) {
     	// for now, cheat just to get something working (busy waiting is bad)
+
+        //Tiempo que se va a mandar al currentThread a dormir
     	long wakeTime = Machine.timer().getTime() + x;
+        //Se obtiene el thread que vamos a mandar a dormir
     	KThread threadSleep = KThread.currentThread();
+        //Instancio un objeto de la clase que cree para manejar la relacion entre el thread
+        //y el tiempo que debe permanecer dormido
         ReadyTimeThread threadTime = new ReadyTimeThread(threadSleep, wakeTime);
         boolean intStatus = Machine.interrupt().disable();
+        //Lo agrego a una cola de threads que esperan
         waitQueue.add(threadTime);
+        //mando a dormir al thread
+        System.out.println(threadSleep.getName()+" "+String.valueOf(Machine.timer().getTime())); 
         threadSleep.sleep();
         Machine.interrupt().restore(intStatus);
     }
